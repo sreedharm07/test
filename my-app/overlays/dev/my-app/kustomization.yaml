@@ -1,0 +1,9 @@
+---
+namespace: pyrra
+replicas:
+  - name: nginx-deployment
+    count: 2
+images:
+  - name: nginx:latest
+resources:
+  - ../../../base
