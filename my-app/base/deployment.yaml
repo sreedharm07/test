@@ -17,6 +17,6 @@ spec:
       containers:
         - name: nginx
           imagePullPolicy: Always
-          image: nginx
+          image: sreedhar007/frontend:84
           ports:
             - containerPort: 80
