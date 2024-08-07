@@ -2,7 +2,7 @@
 namespace: pyrra
 replicas:
   - name: nginx-deployment
-    count: 2
+    count: 1
 images:
   - name: sreedhar007/frontend:84
 resources:
