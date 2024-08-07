@@ -6,8 +6,8 @@ metadata:
   namespace: pyrra
   annotations:
     argocd-image-updater.argoproj.io/image-list: sreedhar007/frontend:~84
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+#  finalizers:
+#    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
