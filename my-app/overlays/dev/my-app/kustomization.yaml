@@ -2,8 +2,9 @@
 namespace: pyrra
 replicas:
   - name: nginx-deployment
-    count: 4
+    count: 2
 images:
-  - name: sreedhar007/frontend:84
+  - name: sreedhar007/frontend
+    newTag: 84
 resources:
   - ../../../base
