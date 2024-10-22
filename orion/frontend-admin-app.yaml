@@ -1,0 +1,15 @@
+apiVersion: zinier.tools/v1alpha1
+kind: CompositeCloudFront
+metadata:
+  name: orion-admin-app
+  namespace: crossplane-system
+spec:
+  parameters:
+    name: orion-admin-app
+    region: ap-south-1
+    domain: admin.orion.devzinier.net
+    altDomain: '*.admin.orion.devzinier.net'
+    zone: devzinier.net
+    enabled: true
+  # compositionUpdatePolicy: Manual
+    
