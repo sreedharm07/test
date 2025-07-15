@@ -1,0 +1,91 @@
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    application: gdz
+    http_target: process-event
+    pyrra.dev/app: gdz-dev-solution
+  name: availability
+  namespace: monitoring
+spec:
+  alerting: {}
+  description:  availability of dev-solution (4xx,5xx errors)
+  indicator:
+    ratio:
+      errors:
+        metric:  calls_total{service_name="gdz-dev-solution", http_status_code!~"2..", http_target=~"/event/start|/process/start"}
+      total:
+        metric:  calls_total{service_name="gdz-dev-solution", http_target=~"/event/start|/process/start"}
+  target: "95.5"
+  window: 1w
+
+---
+
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    application: gdz
+    pyrra.dev/app: dev-solution
+    role: alert-rules
+  name: loglevel
+  namespace: monitoring
+spec:
+  alerting: {}
+  description: error logs in dev-solution gdz
+  indicator:
+    ratio:
+      errors:
+        metric: logback_events_total{application="gdz", namespace="dev-solution",level="error"}
+      total:
+        metric: logback_events_total{application="gdz", namespace="dev-solution"}
+  target: "95.5"
+  window: 1w
+
+---
+
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    application: gdz
+    pyrra.dev/app: gdz-dev-solution
+    role: alert-rules
+  name: targetwiseavailability
+  namespace: monitoring
+spec:
+  alerting: {}
+  description:  uri wise http requests errors
+  indicator:
+    ratio:
+      errors:
+        metric:  calls_total{service_name="gdz-dev-solution", http_status_code!~"2..", http_target=~"/.*"}
+      grouping:
+        - http_target
+      total:
+        metric:  calls_total{service_name="gdz-dev-solution", http_target=~"/.*"}
+  target: "95.5"
+  window: 1w
+
+---
+
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    application: gdz
+    pyrra.dev/app: gdz-dev-solution
+    role: alert-rules
+  name: latency
+  namespace: monitoring
+spec:
+  alerting: {}
+  description: GDZ latency duration.
+  indicator:
+    latency:
+      success:
+        metric: http_server_requests_seconds_bucket{application="gdz", namespace="dev-solution", le="1.073741824"}
+      total:
+        metric: http_server_requests_seconds_count{application="gdz", namespace="dev-solution""}
+  target: "95.5"
+  window: 2w

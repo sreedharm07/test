@@ -1,9 +1,0 @@
----
-namespace: pyrra
-replicas:
-  - name: nginx-deployment
-    count: 2
-images:
-  - name: sreedhar007/frontend:83
-resources:
-  - ../../../base

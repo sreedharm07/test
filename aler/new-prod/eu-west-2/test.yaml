@@ -1,0 +1,66 @@
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    application: gdz
+    http_target: PushNotification
+    pyrra.dev/app: prod-vm
+  name: uat-availability
+  namespace: kube-monitoring
+spec:
+  alerting: {}
+  description:  availability of gdz-prod-vm (4xx,5xx errors)
+  indicator:
+    ratio:
+      errors:
+        metric:  calls_total{service_name="gdz-prod-vm",http_status_code!~"2..",http_target="/admin/PushNotification/update"}
+      total:
+        metric:  calls_total{service_name="gdz-prod-vm",http_target="/admin/PushNotification/update"}
+  target: "95.5"
+  window: 1w
+
+---
+
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    application: gdz
+    pyrra.dev/app: prod-vm
+    role: alert-rules
+  name: vm-loglevel
+  namespace: kube-monitoring
+spec:
+  alerting: {}
+  description: error logs in uat-vmtest gdz
+  indicator:
+    ratio:
+      errors:
+        metric: logback_events_total{application="gdz", namespace="prod-vm",level="error"}
+      total:
+        metric: logback_events_total{application="gdz", namespace="prod-vm"}
+  target: "95.5"
+  window: 1w
+
+---
+
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    application: gdz
+    pyrra.dev/app: prod-vm
+    role: alert-rules
+  name: vm-latency
+  namespace: kube-monitoring
+spec:
+  alerting: {}
+  description: GDZ latency duration.
+  indicator:
+    latency:
+      success:
+        metric: http_server_requests_seconds_bucket{application="gdz",namespace="prod-vm",uri="/process/start",le="1.073741824"}
+      total:
+        metric: http_server_requests_seconds_bucket{application="gdz",namespace="prod-vm",uri="/process/start"}
+  target: "95.5"
+  window: 2w

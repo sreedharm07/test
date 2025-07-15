@@ -1,0 +1,136 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: compositesqsqs.zinier.tools
+spec:
+  group: zinier.tools
+  names:
+    kind: CompositeSQSQ
+    plural: compositesqsqs
+  claimNames:
+    kind: SQSQ
+    plural: sqsqs
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                region:
+                  type: string
+                env:
+                  type: string
+                  description: Name of the env
+                tenant:
+                  type: string
+                  description: Name of the namespace
+              required:
+                - env
+                - tenant
+                - region
+            status:
+              type: object
+              properties:
+                queueArn:
+                  type: string
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: compositequeue.zinier.tools
+spec:
+  compositeTypeRef:
+    apiVersion: zinier.tools/v1alpha1
+    kind: CompositeSQSQ
+  resources:
+    - name: "outbound-queue"
+      base:
+        apiVersion: sqs.aws.upbound.io/v1beta1
+        kind: Queue
+        spec:
+          deletionPolicy: Orphan
+          forProvider:
+            fifoQueue: true
+            delaySeconds: 0
+            contentBasedDeduplication: true
+            deduplicationScope: "messageGroup"
+            messageRetentionSeconds: 1209600
+            maxMessageSize: 262144
+            receiveWaitTimeSeconds: 0
+            sqsManagedSseEnabled: false
+            visibilityTimeoutSeconds: 120
+      patches:
+        - fromFieldPath: "status.queueArn"
+          toFieldPath: "spec.forProvider.redrivePolicy"
+          transforms:
+            - type: string
+              string:
+                fmt: |
+                  {"deadLetterTargetArn":"%s","maxReceiveCount":10}
+        - type: ToCompositeFieldPath
+          fromFieldPath: "status.atProvider.arn"
+          toFieldPath: "status.queueArn"
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.env
+              - fromFieldPath: spec.tenant
+            strategy: string
+            string:
+              fmt: "%s-%s-vkrm-queue.fifo"
+          toFieldPath: "metadata.name"
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.env
+              - fromFieldPath: spec.tenant
+            strategy: string
+            string:
+              fmt: "%s-%s-vkrm-queue.fifo"
+          toFieldPath: "spec.forProvider.name"
+        - fromFieldPath: "spec.region"
+          toFieldPath: "spec.forProvider.region"
+    - name: "outbound-delay-queue"
+      base:
+        apiVersion: sqs.aws.upbound.io/v1beta1
+        kind: Queue
+        spec:
+          forProvider:
+            fifoQueue: true
+            delaySeconds: 180
+            contentBasedDeduplication: true
+            deduplicationScope: "messageGroup"
+            messageRetentionSeconds: 1209600
+            maxMessageSize: 262144
+            receiveWaitTimeSeconds: 0
+            sqsManagedSseEnabled: false
+            visibilityTimeoutSeconds: 120
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: "status.atProvider.arn"
+          toFieldPath: "status.queueArn"
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.env
+              - fromFieldPath: spec.tenant
+            strategy: string
+            string:
+              fmt: "%s-%s-vkrm-delay-queue.fifo"
+          toFieldPath: "metadata.name"
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.env
+              - fromFieldPath: spec.tenant
+            strategy: string
+            string:
+              fmt: "%s-%s-vkrm-delay-queue.fifo"
+          toFieldPath: "spec.forProvider.name"
+        - fromFieldPath: "spec.region"
+          toFieldPath: "spec.forProvider.region"

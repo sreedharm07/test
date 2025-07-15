@@ -1,0 +1,93 @@
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    prometheus: k8s
+    pyrra.dev/team: devops
+    role: alert-rules
+  name: availability
+  namespace: kube-monitoring
+spec:
+  alerting: {}
+  description:  Availability of our application
+  indicator:
+    ratio:
+      errors:
+        metric: http_server_requests_seconds_count{application="gdz", namespace="preprod",status!~"2..", uri=~"/process/start|/event/start|/query/read|/session/login"}
+      grouping:
+        - uri
+      total:
+        metric: http_server_requests_seconds_count{application="gdz", namespace="preprod", uri=~"/process/start|/event/start|/query/read|/session/login"}
+  target: "95.5"
+  window: 2w
+  
+---
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    prometheus: k8s
+    pyrra.dev/team: devops
+    role: alert-rules
+  name: totalhttprequests
+  namespace: kube-monitoring
+spec:
+  alerting: {}
+  description:  uri wise http requests errors
+  indicator:
+    ratio:
+      errors:
+        metric: http_server_requests_seconds_count{application="gdz", namespace="preprod",
+          status!~"2..", uri!="/actuator/prometheus"}
+      #      grouping:
+      #        - uri
+      total:
+        metric: http_server_requests_seconds_count{application="gdz", namespace="preprod",
+          uri!="/actuator/prometheus"}
+  target: "95.5"
+  window: 2w
+
+
+---
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    prometheus: k8s
+    pyrra.dev/team: devops
+    role: alert-rules
+  name: latency
+  namespace: kube-monitoring
+spec:
+  alerting: {}
+  description: GDZ latency duration.
+  indicator:
+    latency:
+      success:
+        metric: http_server_requests_seconds_bucket{application="gdz", namespace="preprod", uri=~"/process/start|/process/bufferedSync|/event/start|/query/read|/process/resume|/session/login", le="1.073741824"}
+      total:
+        metric: http_server_requests_seconds_count{application="gdz", namespace="preprod", uri=~"/process/start|/process/bufferedSync|/event/start|/query/read|/process/resume|/session/login"}
+  target: "95.5"
+  window: 2w
+
+---
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  labels:
+    prometheus: k8s
+    pyrra.dev/team: devops
+    role: alert-rules
+  name: latencytotal
+  namespace: kube-monitoring
+spec:
+  alerting: {}
+  description: uri wise latency duration.
+  indicator:
+    latency:
+      success:
+        metric: http_server_requests_seconds_bucket{application="gdz", namespace="preprod", uri=~"/process/start",status=~"2.*", le="1.073741824"}
+      total:
+        metric: http_server_requests_seconds_count{application="gdz", namespace="preprod", uri=~"/process/start",status=~"2.*"}
+  target: "95.5"
+  window: 2w

@@ -1,0 +1,359 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  prod-us-east-1-k8s-apps-alerts-cm
+  namespace: kube-monitoring
+data:
+  alerts-prod-k8s-apps.rules.yaml: |
+    groups:
+       - name: "prod-us-east-1-monitoring-alerts"
+         rules:
+           - alert: "High Node CPU Usage on useast1-mon prod-monitoring"
+             annotations:
+               summary: "k8s Node CPU greater than 80%."
+               description: "{{ $labels.tenantname}} In this namespace {{ $labels.kubernetes_io_hostname }} This Node Used more that 80 % of cpu Percentage of CPU."
+             expr: |
+               (sum(rate(container_cpu_usage_seconds_total{id="/",container!="POD"}[5m])) by (kubernetes_io_hostname) / sum(machine_cpu_cores) by (kubernetes_io_hostname)  * 100) > 80
+             for: 1m
+             labels:
+               type: 'zinier-prod-monitoring-alerts'
+               prod_mon_useast1: true
+    
+           - alert: "High Persistent Volume Usage on useast1-mon prod-monitoring%"
+             annotations:
+               summary: "Persistent Volume Usage on useast1-mon is greater than 90%."
+               description: " {{ $labels.namespace}} In this namespace {{ $labels.persistentvolumeclaim }} This persistentvolumeclaim has Used more that 85 Percentage of Volume."
+             expr: |
+               (sum(kubelet_volume_stats_used_bytes) by (namespace, persistentvolumeclaim) /
+               sum(kubelet_volume_stats_capacity_bytes) by (namespace, persistentvolumeclaim)) * 100 > 90
+             for: 1m
+             labels:
+               type: 'zinier-prod-monitoring-alerts'
+               PVC_alerts: true
+    
+           - alert: "High Node Disk Usage on useast1-mon prod-monitoring"
+             annotations:
+               summary: "Node Disk Usage on useast1-mon is greater than 85%."
+               description: "{{ $labels.tenantname}} in this namespace {{ $labels.kubernetes_io_hostname }} this Node Used more that 85 Percentage of Disk."
+             expr: |
+               (sum(container_fs_usage_bytes{id="/",container!="POD"}) by (kubernetes_io_hostname) / 
+               sum(container_fs_limit_bytes{container!="POD",id="/"}) by (kubernetes_io_hostname)) * 100 > 85
+             for: 1m
+             labels:
+               type: 'zinier-prod-monitoring-alerts'
+               prod_mon_useast1: true
+    
+           - alert: "High Node Memory Usage on useast1-mon prod-monitoring"
+             annotations:
+               summary: "Node Memory Usage on useast1-mon is greater than 80%."
+               description: "{{ $labels.tenantname}} in this tenant {{ $labels.kubernetes_io_hostname }} this Node Used more that 80 Percentage of Memory."
+             expr: |
+               (sum (container_memory_working_set_bytes{id="/",container!="POD"}) by  
+               (kubernetes_io_hostname) / sum (machine_memory_bytes{}) by (kubernetes_io_hostname) * 100) > 80
+             for: 1m
+             labels:
+               type: 'zinier-prod-monitoring-alerts'
+               prod_mon_useast1: true
+    
+           - alert: "redis pod in useast1-mon prod-monitoring"
+             annotations:
+               summary: "redis pods on useast1-mon is less than 1 "
+               description: "{{ $labels.tenantname}} in this tenant {{ $labels.kubernetes_io_hostname }} redis pod in useast1 is less than 1 ."
+             expr: |
+               redis_up < 1
+             for: 1m
+             labels:
+               type: 'zinier-prod-monitoring-alerts'
+               prod_mon_useast1: true
+    
+       - name: "prod-us-east-1-preprod-apps-alerts"
+         rules:
+           - alert: "High CPU Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High CPU usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used 80 Percentage of CPU."
+             expr: |
+               (sum(rate(container_cpu_usage_seconds_total{namespace="preprod"}[5m])) by (namespace,container,pod)/(sum(kube_pod_container_resource_limits{namespace="preprod",resource="cpu"}) by (namespace,container,pod)) )*100 > 80
+             for: 1m
+             labels:
+               preprod: true
+
+           - alert: "High Memory Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+             expr: |
+               ((( sum(container_memory_working_set_bytes{namespace="preprod", container !=""}) by (container,namespace,pod)  /  
+               sum(container_spec_memory_limit_bytes{namespace="preprod",container!=""}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 80
+             for: 1m
+             labels:
+               preprod: true
+
+           - alert: "Pod Restart"
+             annotations:
+               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+             expr: |
+               sum(rate(kube_pod_container_status_restarts_total{namespace="preprod"}[5m])) by (pod,namespace,container) > 0
+             for: 1m
+             labels:
+               preprod: true
+
+           - alert: "Number of replicas is 0"
+             annotations:
+               summary: "{{ $labels.deployment }} has 0 pod in {{ $labels.namespace }}"
+               description: "{{ $labels.deployment }} This deployment has less than 1 pods."
+             expr: |
+               sum(kube_deployment_status_replicas{namespace="preprod"} == 0) by (deployment, namespace)
+             for: 1m
+             labels:
+               preprod: true
+    
+       - name: "prod-us-east-1-prod-galaxy-apps-alerts"
+         rules:
+           - alert: "High CPU Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High CPU usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used 80 Percentage of CPU."
+             expr: |
+               (sum(rate(container_cpu_usage_seconds_total{namespace="prod-galaxy"}[5m])) by (namespace,container,pod)/(sum(kube_pod_container_resource_limits{namespace="prod-galaxy",resource="cpu"}) by (namespace,container,pod)) )*100 > 80
+             for: 1m
+             labels:
+               prod_galaxy: true
+
+           - alert: "High Memory Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+             expr: |
+               ((( sum(container_memory_working_set_bytes{namespace="prod-galaxy", container !=""}) by (container,namespace,pod)  /  
+               sum(container_spec_memory_limit_bytes{namespace="prod-galaxy",container!=""}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 80
+             for: 1m
+             labels:
+               prod_galaxy: true
+
+           - alert: "Pod Restart"
+             annotations:
+               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+             expr: |
+               sum(rate(kube_pod_container_status_restarts_total{namespace="prod-galaxy"}[5m])) by (pod,namespace,container) > 0
+             for: 1m
+             labels:
+               prod_galaxy: true
+
+           - alert: "Number of replicas is 0"
+             annotations:
+               summary: "{{ $labels.deployment }} has 0 pod in {{ $labels.namespace }}"
+               description: "{{ $labels.deployment }} This deployment has less than 1 pods."
+             expr: |
+               sum(kube_deployment_status_replicas{namespace="prod-galaxy"} == 0) by (deployment, namespace)
+             for: 1m
+             labels:
+               type: 'zinier-prod-monitoring-alerts'
+               prod_galaxy: true
+        
+       - name: "prod-us-east-1-prod-platform-apps-alerts"
+         rules:
+           - alert: "High CPU Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High CPU usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used 80 Percentage of CPU."
+             expr: |
+               (sum(rate(container_cpu_usage_seconds_total{namespace="prod-platform"}[5m])) by (namespace,container,pod)/(sum(kube_pod_container_resource_limits{namespace="prod-platform",resource="cpu"}) by (namespace,container,pod)) )*100 > 80
+             for: 1m
+             labels:
+               prod_platform: true
+
+           - alert: "High Memory Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+             expr: |
+               ((( sum(container_memory_working_set_bytes{namespace="prod-platform", container !=""}) by (container,namespace,pod)  /  
+               sum(container_spec_memory_limit_bytes{namespace="prod-platform",container!=""}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 80
+             for: 1m
+             labels:
+               prod_platform: true
+
+           - alert: "Pod Restart"
+             annotations:
+               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+             expr: |
+               sum(rate(kube_pod_container_status_restarts_total{namespace="prod-platform"}[5m])) by (pod,namespace,container) > 0
+             for: 1m
+             labels:
+               prod_platform: true
+
+           - alert: "Number of replicas is 0"
+             annotations:
+               summary: "{{ $labels.deployment }} has 0 pod in {{ $labels.namespace }}"
+               description: "{{ $labels.deployment }} This deployment has less than 1 pods."
+             expr: |
+               sum(kube_deployment_status_replicas{namespace="prod-platform"} == 0) by (deployment, namespace)
+             for: 1m
+             labels:
+               prod_platform: true
+    
+       - name: "prod-us-east-1-prod-workspace-apps-alerts"
+         rules:
+           - alert: "High CPU Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High CPU usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used 80 Percentage of CPU."
+             expr: |
+               (sum(rate(container_cpu_usage_seconds_total{namespace="prod-workspace"}[5m])) by (namespace,container,pod)/(sum(kube_pod_container_resource_limits{namespace="prod-workspace",resource="cpu"}) by (namespace,container,pod)) )*100 > 80
+             for: 1m
+             labels:
+               prod_workspace: true
+
+           - alert: "High Memory Usage"
+             annotations:
+               summary: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+             expr: |
+               ((( sum(container_memory_working_set_bytes{namespace="prod-workspace", container !=""}) by (container,namespace,pod)  /  
+               sum(container_spec_memory_limit_bytes{namespace="prod-workspace",container!=""}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 80
+             for: 1m
+             labels:
+               prod_workspace: true
+
+           - alert: "Pod Restart"
+             annotations:
+               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+             expr: |
+               sum(rate(kube_pod_container_status_restarts_total{namespace="prod-workspace"}[5m])) by (pod,namespace,container) > 0
+             for: 1m
+             labels:
+               prod_workspace: true
+
+           - alert: "Number of replicas is 0"
+             annotations:
+               summary: "{{ $labels.deployment }} has 0 pod in {{ $labels.namespace }}"
+               description: "{{ $labels.deployment }} This deployment has less than 1 pods."
+             expr: |
+               sum(kube_deployment_status_replicas{namespace="prod-workspace"} == 0) by (deployment, namespace)
+             for: 1m
+             labels:
+               prod_workspace: true
+
+
+
+
+
+       - name: "prod-us-east-1-kube-logging-alerts"
+         rules:
+           - alert: "High Memory Usage "
+             annotations:
+               summary: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+             expr: |
+                ((( sum(container_memory_working_set_bytes{namespace="kube-logging"}) by (namespace,container,pod)  /  
+                sum(container_spec_memory_limit_bytes{namespace="kube-logging"}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 90
+             for: 1m
+             labels:
+               prod_monitoring_east: true
+
+           - alert: "Pod Container Restart Rate in namespace kube-logging"
+             annotations:
+               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+             expr: |
+               sum(rate(kube_pod_container_status_restarts_total{namespace="kube-logging"}[5m])) by (pod,namespace,container) > 0
+             for: 1m
+             labels:
+               prod_monitoring_east: true
+    
+       - name: "prod-us-east-1-kube-monitoring-alerts"
+         rules:
+           - alert: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+             annotations:
+               summary: "Memory Usage in namespace kube-monitoring greater than 90%."
+               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+             expr: |
+                ((( sum(container_memory_working_set_bytes{namespace="kube-monitoring"}) by (namespace,container,pod)  /  
+                sum(container_spec_memory_limit_bytes{namespace="kube-monitoring"}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 90
+             for: 1m
+             labels:
+               prod_monitoring_east: true
+
+           - alert: "Pod Container Restart Rate in namespace kube-monitoring"
+             annotations:
+               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+             expr: |
+               sum(rate(kube_pod_container_status_restarts_total{namespace="kube-monitoring"}[5m])) by (pod,namespace,container) > 0
+             for: 1m
+             labels:
+               prod_monitoring_east: true
+    
+#       - name: "prod-us-east-1-kube-system-alerts"
+#         rules:
+#           - alert: "High Memory Usage in namespace kube-system"
+#             annotations:
+#               summary:"{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+#               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+#             expr: |
+#                ((( sum(container_memory_working_set_bytes{namespace="kube-system"}) by (namespace,container,pod)  /
+#                sum(container_spec_memory_limit_bytes{namespace="kube-system"}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 90
+#             for: 1m
+#             labels:
+#               prod_monitoring_east: true
+#
+#           - alert: "Pod Container Restart Rate in namespace kube-system"
+#             annotations:
+#               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+#               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+#             expr: |
+#               sum(rate(kube_pod_container_status_restarts_total{namespace="kube-system"}[5m])) by (pod,namespace,container) > 0
+#             for: 1m
+#             labels:
+#               prod_monitoring_east: true
+    
+#       - name: "prod-us-east-1-kube-tracing-alerts"
+#         rules:
+#           - alert: "High Memory Usage in namespace kube-tracing"
+#             annotations:
+#               summary: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}"
+#               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+#             expr: |
+#                ((( sum(container_memory_working_set_bytes{namespace="kube-tracing"}) by (namespace,container,pod)  /
+#                sum(container_spec_memory_limit_bytes{namespace="kube-tracing"}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 90
+#             for: 1m
+#             labels:
+#               prod_monitoring_east: true
+#
+#           - alert: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+#             annotations:
+#               summary: "Pod Container Restart Rate in namespace kube-tracing"
+#               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+#             expr: |
+#               sum(rate(kube_pod_container_status_restarts_total{namespace="kube-tracing"}[5m])) by (pod,namespace,container) > 0
+#             for: 1m
+#             labels:
+#               prod_monitoring_east: true
+#
+#       - name: "prod-us-east-1-shared-services-alerts"
+#         rules:
+#           - alert: "High Memory Usage in namespace shared-services"
+#             annotations:
+#               summary: "{{ $labels.container }} has High Memory usage in {{ $labels.namespace }}""
+#               description: "{{ $labels.container }} This Container Used {{ printf \"%.2f\"   }} % of Memory "
+#             expr: |
+#                ((( sum(container_memory_working_set_bytes{namespace="shared-services"}) by (namespace,container,pod)  /
+#                sum(container_spec_memory_limit_bytes{namespace="shared-services"}) by (namespace,container,pod) ) * 100 ) < +Inf ) > 90
+#             for: 1m
+#             labels:
+#               prod_monitoring_east: true
+#
+#           - alert: "Pod Container Restart Rate in namespace shared-services"
+#             annotations:
+#               summary: "{{ $labels.container }} has Restarted in {{ $labels.namespace }}"
+#               description: "{{ $labels.container}}  This Container has restarted in this {{ $labels.pod }}  More Than 0  Times."
+#             expr: |
+#               sum(rate(kube_pod_container_status_restarts_total{namespace="shared-services"}[5m])) by (pod,namespace,container) > 0
+#             for: 1m
+#             labels:
+#               prod_monitoring_east: true

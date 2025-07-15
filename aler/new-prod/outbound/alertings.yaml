@@ -1,0 +1,22 @@
+groups:
+  - name: "outbound-alerts"
+    rules:
+      - alert: "VMprod-UpdateTask-4xx"
+        annotations:
+          summary: "UpdateTask url resulted in 4xx. Please check the application logs to take care of the action needed. Thanks!"
+          description: "On vmo2 prod UpdateTask url is triggered with 4xx status code"
+        expr: |
+          rate(calls_total{service_name="vkrm-prod-vm",http_url="https://gw-vip.gcp.virginmediao2.com/remedy/taskInformation/v1/updatetask",http_status_code=~"4.."}[5m])
+        for: 1m
+        labels:
+          vm_outbound: true
+
+      - alert: "VMprod-UpdateTask-5xx"
+        annotations:
+          summary: "UpdateTask url resulted in 5xx. Please check the application logs to take care of the action needed. Thanks!"
+          description: "On vmo2 prod UpdateTask url is triggered with 5xx status code"
+        expr: |
+          rate(calls_total{service_name="vkrm-prod-vm",http_url="https://gw-vip.gcp.virginmediao2.com/remedy/taskInformation/v1/updatetask",http_status_code=~"5.."}[5m])
+        for: 1m
+        labels:
+          vm_outbound: true

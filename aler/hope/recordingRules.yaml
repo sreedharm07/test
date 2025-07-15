@@ -1,0 +1,151 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name:  hope-cluster-recording-rules-cm
+  namespace: monitoring
+spec:
+  groups:
+    - name: infra_records
+      rules:
+      - expr: | 
+          avg(rate(container_cpu_usage_seconds_total[5m])) by (pod,namespace,container)
+        record: container:container_cpu_usage_seconds_total:avgRate
+      - expr: | 
+          sum(kube_pod_container_resource_limits{unit="core"}) by (pod,namespace,container)
+        record: container:kube_pod_container_resource_limits_cpu:sum
+      - expr: | 
+          sum(kube_pod_container_resource_requests{unit="core"}) by (pod,namespace,container)
+        record: container:kube_pod_container_resource_requests_cpu:sum
+      - expr: | 
+          sum(kube_pod_container_resource_limits{unit="byte"}) by (pod,namespace,container)
+        record: container:kube_pod_container_resource_limits_mem:sum
+      - expr: | 
+          sum(kube_pod_container_resource_requests{unit="byte"}) by (pod,namespace,container)
+        record: container:kube_pod_container_resource_requests_mem:sum
+      - expr: | 
+          sum(container_memory_working_set_bytes) by (pod,namespace)
+        record: container:container_memory_working_set_bytes:sum
+      - expr: | 
+          sum(rate(container_cpu_usage_seconds_total[5m])) by (pod,namespace,container)
+        record: container:kube_pod_container_resource_requests:sumRate
+          
+    - name: backend_records
+      rules:
+      - expr: | 
+          sum(http_server_requests_seconds_count{uri!="/actuator/prometheus"}) by (pod,application,namespace,uri,method,outcome)
+        record: backend:http_server_requests_seconds_count:sum
+      - expr: |
+          sum(rate(http_server_requests_seconds_sum[5m])) by (uri,application,namespace,pod,method,outcome)
+        record: backend:http_server_requests_seconds_sum:sumRate
+      - expr: |
+          sum(rate(http_server_requests_seconds_count[5m])) by (uri,application,namespace,pod,method,outcome)
+        record: backend:http_server_requests_seconds_count:sumRate
+      - expr: |
+          sum(http_server_requests_seconds_max) by (uri,application,namespace,pod,outcome,method)
+        record: backend:http_server_requests_seconds_max:sum
+      - expr: |
+          sum(rate(http_server_requests_seconds_max[5m])) by (uri,application,namespace,pod,outcome,method)
+        record: backend:http_server_requests_seconds_max:sumRate
+      - expr: |
+          sum(http_server_requests_seconds_count{outcome="SERVER_ERROR"}) by (uri,application,namespace,pod)
+        record: backend:http_server_requests_seconds_count_server_error:sum
+      - expr: |
+          sum(rate(http_server_requests_seconds_count{uri!="/actuator/prometheus",status=~"2.*"}[5m])) by (uri,application,namespace,pod,method,outcome)
+        record: backend:http_server_requests_seconds_count_2xx:sumRate
+      - expr: |
+          sum(rate(http_server_requests_seconds_count{uri!="/actuator/prometheus",status=~"4.*"}[5m])) by (uri,application,namespace,pod,method,outcome)
+        record: backend:http_server_requests_seconds_count_4xx:sumRate
+      - expr: |
+          sum(rate(http_server_requests_seconds_count{uri!="/actuator/prometheus",status=~"5.*"}[5m])) by (uri,application,namespace,pod,method,outcome)
+        record: backend:http_server_requests_seconds_count_5xx:sumRate
+      - expr: |
+          histogram_quantile(.50,sum(rate(http_server_requests_seconds_bucket{uri!="/actuator/prometheus", uri!="/actuator/health"}[5m])) by(application,namespace,pod,uri,method,outcome,le))
+        record: backend:http_server_requests_seconds_bucket_p50:quantile
+      - expr: |
+          histogram_quantile(.95,sum(rate(http_server_requests_seconds_bucket{uri!="/actuator/prometheus"}[5m])) by(application,namespace,pod,uri,method,outcome,le))
+        record: backend:http_server_requests_seconds_bucket_p95:quantile  
+      - expr: |
+          histogram_quantile(.99,sum(rate(http_server_requests_seconds_bucket{uri!="/actuator/prometheus"}[5m])) by(application,namespace,pod,uri,method,outcome,le))
+        record: backend:http_server_requests_seconds_bucket_p99:quantile
+      - expr: |
+          sum by(application,namespace,pod,level)(rate(logback_events_total[5m]))
+        record: backend:logback_events_total:sumRate
+        
+    - name: jvm_records
+      rules:
+      - expr: | 
+          sum(rate(jvm_gc_pause_seconds_count[5m])) by (pod,action,cause,application,namespace,gc,container)
+        record: jvm:jvm_gc_pause_seconds_count:sumRate
+      - expr: | 
+          sum(rate(jvm_gc_pause_seconds_sum[5m])) by (pod,action,cause,application,namespace,gc,container)
+        record: jvm:jvm_gc_pause_seconds_sum:sumRate
+      - expr: | 
+          sum(rate(jvm_gc_memory_allocated_bytes_total[5m])) by (pod,application,namespace,container)
+        record: jvm:jvm_gc_pause_seconds_count:sumRate
+      - expr: | 
+          sum(jvm_memory_used_bytes) by (pod,area,application,namespace,pod,id)
+        record: jvm:jvm_memory_used_bytes:sum
+      - expr: | 
+          sum(jvm_memory_committed_bytes) by (pod,area,application,namespace,pod,id)
+        record: jvm:jvm_memory_committed_bytes:sum
+      - expr: | 
+          sum(jvm_memory_max_bytes) by (pod,area,application,namespace,pod,id)
+        record: jvm:jvm_memory_max_bytes:sum
+      - expr: | 
+          sum(process_memory_vss_bytes) by (pod,area,application,namespace,pod,container)
+        record: jvm:process_memory_vss_bytes:sum
+      - expr: | 
+          sum(process_memory_rss_bytes) by (pod,area,application,namespace,pod,container)
+        record: jvm:process_memory_rss_bytes:sum
+      - expr: | 
+          sum(jvm_threads_live_threads) by (pod,namespace,application,container)
+        record: jvm:jvm_threads_live_threads:sum
+      - expr: | 
+          sum(jvm_threads_daemon_threads) by (pod,namespace,application,container)
+        record: jvm:jvm_threads_daemon_threads:sum
+      - expr: | 
+          sum(jvm_threads_peak_threads) by (pod,namespace,application,container)
+        record: jvm:jvm_threads_peak_threads:sum
+      - expr: | 
+          sum(process_threads) by (pod,namespace,application,container)
+        record: jvm:process_threads:sum
+      - expr: | 
+          sum(jvm_threads_states_threads) by (pod,namespace,application,container,state)
+        record: jvm:jvm_threads_states_threads:sum
+      - expr: | 
+          sum(tomcat_threads_current_threads) by (pod,namespace,application,container)
+        record: jvm:tomcat_threads_current_threads:sum
+      - expr: | 
+          sum(system_cpu_count) by (application,namespace,pod,container)
+        record: jvm:system_cpu_count:sum
+      - expr: | 
+          sum(process_uptime_seconds) by (application,namespace,pod,container)
+        record: jvm:process_uptime_seconds:sum
+      - expr: | 
+          sum(process_start_time_seconds) by (application,namespace,pod,container)
+        record: jvm:process_start_time_seconds:sum
+      - expr: | 
+          sum(tomcat_connections_config_max_connections) by (pod,namespace,application,container)
+        record: jvm:tomcat_connections_config_max_connections:sum
+      - expr: | 
+          sum(tomcat_connections_current_connections) by (pod,namespace,application,container)
+        record: jvm:tomcat_connections_current_connections:sum
+      - expr: | 
+          sum(tomcat_connections_keepalive_current_connections) by (pod,namespace,application,container)
+        record: jvm:tomcat_connections_keepalive_current_connections:sum
+      - expr: | 
+          sum(process_files_max_files) by (pod,namespace,application)
+        record: jvm:process_files_max_files:sum
+      - expr: | 
+          sum(process_files_open_files) by (pod,namespace,application)
+        record: jvm:process_files_open_files:sum
+
+
+    - name: calls_total
+      rules:
+        - expr: |
+            sum(calls_total) by (db_system,orgId,http_url,service_name,orgId,status_code,workflowId)
+          record: requests:callstotal:sumRate
+        - expr: |
+            sum(duration_milliseconds_bucket) by (db_system,orgId,http_url,le,service_name,orgId,status_code,workflowId)
+          record: requests:duration:sumRate

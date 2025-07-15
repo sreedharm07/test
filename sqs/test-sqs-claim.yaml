@@ -1,0 +1,10 @@
+apiVersion: zinier.tools/v1alpha1
+kind: CompositeSQSQ
+metadata:
+  name: test-bf-sqs
+spec:
+  compositionRef:
+    name: compositequeue-test.zinier.tools
+  region: ap-south-1
+  env: dev
+  tenant: test
